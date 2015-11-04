@@ -1,13 +1,13 @@
 package com.example.piotrek.easypres;
 
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,6 +16,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Button butBt = (Button) findViewById(R.id.buttonBt);
+        Button butWifi = (Button) findViewById(R.id.buttonWifi);
+        Button butBrowse = (Button) findViewById(R.id.buttonBrowse);
         setSupportActionBar(toolbar);
 
 
@@ -41,5 +44,20 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+    /* Obsluga przycisku BT */
+    public void butBtHandle(View v)
+    {
+
+    }
+    /* Obsluga przycisku Wifi */
+    public void butWifiHandle(View v)
+    {
+
+    }
+    /* Obsluga przycisku Browse */
+    public void butBrowseHandle(View v)
+    {
+
     }
 }

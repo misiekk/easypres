@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">EasyPres</string>
     <string name="action_settings">Settings</string>
+    <string name="but_bt">Bluetooth</string>
+    <string name="but_wifi">WiFi</string>
+    <string name="but_browse">Browse...</string>
 </resources>
