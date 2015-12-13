@@ -4,4 +4,5 @@
     <string name="but_bt">Bluetooth</string>
     <string name="but_wifi">WiFi</string>
     <string name="but_browse">Browse...</string>
+    <string name="title_activity_browse">BrowseActivity</string>
 </resources>

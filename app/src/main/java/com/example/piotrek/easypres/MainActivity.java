@@ -1,12 +1,23 @@
 package com.example.piotrek.easypres;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+//import org.apache.poi.xslf.*;
+//import org.apache.poi.xslf.usermodel.XMLSlideShow;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -19,9 +30,13 @@ public class MainActivity extends AppCompatActivity {
         Button butBt = (Button) findViewById(R.id.buttonBt);
         Button butWifi = (Button) findViewById(R.id.buttonWifi);
         Button butBrowse = (Button) findViewById(R.id.buttonBrowse);
+
         setSupportActionBar(toolbar);
 
+    }
 
+    public enum SupportedPowerPointFiles{
+        PPTX
     }
 
     @Override
@@ -58,6 +73,9 @@ public class MainActivity extends AppCompatActivity {
     /* Obsluga przycisku Browse */
     public void butBrowseHandle(View v)
     {
-
+        Intent i = new Intent(this, BrowseActivity.class);
+        startActivity(i);
     }
+
+
 }
