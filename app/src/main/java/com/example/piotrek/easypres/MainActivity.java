@@ -76,6 +76,4 @@ public class MainActivity extends AppCompatActivity {
         Intent i = new Intent(this, BrowseActivity.class);
         startActivity(i);
     }
-
-
 }
