@@ -1,24 +1,30 @@
 package com.example.piotrek.easypres;
 
 import android.content.Intent;
-import android.net.Uri;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+
+import android.os.ParcelFileDescriptor;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import android.graphics.pdf.PdfRenderer;
+
 
 public class BrowseActivity extends AppCompatActivity {
+    ArrayList<String> ptxPaths;
+    ArrayAdapter<String> ptxAdapter;
     ArrayList<String> pdfPaths;
     ArrayAdapter<String> pdfAdapter;
     ListView lv;
@@ -45,16 +51,6 @@ public class BrowseActivity extends AppCompatActivity {
 
         processDir(root, pdfPaths);
         fillListView();
-        /*try
-        {
-            new FileInputStream("pres.pptx");
-            //XMLSlideShow ppt = new XMLSlideShow(new FileInputStream("pres.pptx"));
-        }
-        catch(FileNotFoundException e)
-        {
-
-        }*/
-
     }
 
     public void processDir(File f, ArrayList<String> list)
@@ -79,7 +75,6 @@ public class BrowseActivity extends AppCompatActivity {
     {
         if(!f.getName().endsWith(".pdf"))
             return;
-        //Log.d("FILE", f.getAbsolutePath());
         list.add(f.getAbsolutePath());
     }
 
@@ -89,10 +84,8 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     public void openPdf(String path){
-        File f = new File(path);
-        Intent i = new Intent(Intent.ACTION_VIEW);
-        i.setDataAndType(Uri.fromFile(f), "application/pdf");
-        i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        Intent i = new Intent(this, ShowSlideActivity.class);
+        i.putExtra("@string/pathToPdf", path);
         startActivity(i);
     }
 

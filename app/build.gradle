@@ -1,12 +1,68 @@
 apply plugin: 'com.android.application'
 
+dependencies {
+    testCompile 'junit:junit:4.12'
+    compile('com.android.support:appcompat-v7:23.1.1')
+    compile 'com.android.support:design:23.1.1'
+
+    //compile files('libs/aspose.slides-1.1.0.jar')
+    //compile files('libs/ae-jaxb-2.2.5.jar')
+    compile 'com.android.support:multidex:1.0.1'
+    /*
+    compile files('libs/poi-ooxml-3.13-20150929.jar')
+    compile files('libs/poi-3.13-20150929.jar')
+    compile files('libs/ooxml-lib/xmlbeans-2.6.0.jar')
+    compile files('libs/poi-ooxml-schemas-3.13-20150929.jar')
+
+
+    // JSR173 APIs
+    compile 'edu.usf.cutr.android.xml:stax2-api-android:3.1.1'
+    compile 'edu.usf.cutr.android.xml:stax-api-android:1.0-2'
+    // JSR173 provider implementation - Aalto
+    compile 'edu.usf.cutr.android.xml:aalto-xml-android:0.9.8'*/
+/*
+    compile files('libs/activation.jar')
+    compile files('libs/additionnal.jar')
+    compile files('libs/ae-awt.jar')
+    compile files('libs/ae-docx4j-2.8.0-SNAPSHOT.jar')
+    compile files('libs/ae-jaxb-2.2.5.jar')
+    compile files('libs/ae-xmlgraphics-commons.jar')
+    compile files('libs/avalon-framework-api-4.3.1.jar')
+    compile files('libs/avalon-framework-impl-4.3.1.jar')
+    compile files('libs/commons-codec-1.3.jar')
+    compile files('libs/commons-io-1.3.1.jar')
+    compile files('libs/commons-lang-2.4.jar')
+    compile files('libs/commons-logging-1.1.1.jar')
+    compile files('libs/istack-commons-runtime.jar')
+    compile files('libs/JAXBNamespacePrefixMapper-2.2.4.jar')
+    compile files('libs/jaxp-datatype.jar')
+    compile files('libs/log4j-1.2.15.jar')
+    //compile files('libs/serializer-2.7.1.jar')
+    compile files('libs/stringtemplate-3.2.1.jar')
+    compile files('libs/txw2-20110809.jar')
+    compile files('libs/w3c-css.jar')*/
+    compile 'com.android.support:appcompat-v7:23.1.1'
+    compile 'com.android.support:design:23.1.1'
+}
+/*
+repositories {
+    mavenCentral()
+    maven {
+        // CUTR SNAPSHOTs
+        url "https://github.com/CUTR-at-USF/cutr-mvn-repo/raw/master/snapshots"
+    }
+    maven {
+        // CUTR Releases
+        url "https://github.com/CUTR-at-USF/cutr-mvn-repo/raw/master/releases"
+    }
+}*/
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.1"
 
     defaultConfig {
         applicationId "com.example.piotrek.easypres"
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
@@ -18,14 +74,20 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-}
+/*
+    packagingOptions {
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
 
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.1.0'
-    compile 'com.android.support:design:23.1.0'
-    //compile files('libs/aspose.slides-1.1.0.jar')
-    //compile files('poi-3.13-20150929.jar')
-    //compile files('poi-ooxml-3.13-20150929.jar')
-}
+    }*/
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
+
+    }
+
+
+
+
