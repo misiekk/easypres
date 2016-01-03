@@ -62,7 +62,8 @@ public class MainActivity extends AppCompatActivity {
     /* Obsluga przycisku Wifi */
     public void butWifiHandle(View v)
     {
-
+        Intent i = new Intent(this, ShowSlideActivity.class);
+        startActivity(i);
     }
     /* Obsluga przycisku Browse */
     public void butBrowseHandle(View v)

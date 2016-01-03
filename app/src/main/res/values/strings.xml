@@ -8,4 +8,5 @@
     <string name="title_activity_show_slide">ShowSlideActivity</string>
     <string name="title_activity_remote_bluetooth">RemoteBluetooth</string>
     <string name="pathToPdf">pathToPdf</string>
+    <string name="startBT">Starting Bluetooth Adapter...</string>
 </resources>

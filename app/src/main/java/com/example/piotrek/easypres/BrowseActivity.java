@@ -73,7 +73,7 @@ public class BrowseActivity extends AppCompatActivity {
 
     public void processFile(File f, ArrayList<String> list)
     {
-        if(!f.getName().endsWith(".pdf"))
+        if(!f.getName().endsWith(".jpg"))
             return;
         list.add(f.getAbsolutePath());
     }
@@ -84,8 +84,8 @@ public class BrowseActivity extends AppCompatActivity {
     }
 
     public void openPdf(String path){
-        Intent i = new Intent(this, ShowSlideActivity.class);
-        i.putExtra("@string/pathToPdf", path);
+        Intent i = new Intent(this, RemoteBluetooth.class);
+        i.putExtra("pathToPdf", path);
         startActivity(i);
     }
 
