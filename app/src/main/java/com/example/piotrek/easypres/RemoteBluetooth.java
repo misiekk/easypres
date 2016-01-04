@@ -25,7 +25,9 @@ import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -123,23 +125,13 @@ public class RemoteBluetooth extends AppCompatActivity {
     @Override
     public void onDestroy(){
         super.onDestroy();
-        try {
-            //txt.setText(info4);
-            btSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        /*if(adapter.isEnabled()) {
-            adapter.disable();
-            Toast.makeText(this, "Disabling Bluetooth...", Toast.LENGTH_SHORT).show();
-        }*/
+        reset();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         startBTAdapter();
-
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -154,7 +146,7 @@ public class RemoteBluetooth extends AppCompatActivity {
         }
     }
 
-    public void startTransmission(final byte[] buf){
+    public synchronized void startTransmission(final byte[] buf){
         if(buf == null){
             Log.d("BUFFER IS NULL", "!!!");
             return;
@@ -165,10 +157,137 @@ public class RemoteBluetooth extends AppCompatActivity {
         String info2 = info1 + "\n" + "Connecting...";
         String info3 = info2 + "\n" + "Writing to stream...";
         final String info4 = info3 + "\n" + "Closing socket...";
+        final BluetoothSocket socket;
+
         try {
             btSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
-
             txt.setText(info1);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        adapter.cancelDiscovery();
+        new Thread(new Runnable(){
+            public void run(){
+                //OutputStream out = null;
+                try {
+                    btSocket.connect();
+                    //txt.setText(info2);
+                } catch (IOException e) {
+                    try {
+                        btSocket.close();
+                        //Toast.makeText(getApplicationContext(), "Could not connect!", Toast.LENGTH_SHORT).show();
+                    } catch (IOException e2) {
+                        e2.printStackTrace();
+                    }
+                }
+
+                try {
+                    if(!btSocket.isConnected()){
+                        btSocket.connect();
+                    }
+                    //Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_SHORT).show();
+                    outStream = btSocket.getOutputStream();
+                    Log.d("BTSOCKET ", Boolean.toString(btSocket.isConnected()));
+                    String info = "";
+                    if (outStream != null) {
+                        info = "EXISTS";
+                    } else {
+                        info = "NOT EXISTS";
+                    }
+                    Log.d("OUTSTREAM ", info);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                //txt.setText(info3);
+
+              try {
+                  if(outStream == null){
+                      Log.d("OUTSTREAM ", "IS NULL!");
+                      return;
+                  }
+                  Log.d("STARTING ", "WRITING TO SOCKET");
+                  //outStream.write("#F".getBytes(), 0, 2);     // #F - new file incoming
+                  outStream.write(buf);
+                  //outStream.write("#".getBytes());
+                  outStream.flush();
+                 /* try{
+                      Thread.currentThread().sleep(100, 0);
+                  }
+                  catch (InterruptedException e)
+                  {
+                      e.printStackTrace();
+                  }
+                  outStream.write("#E".getBytes());
+                  outStream.flush();*/
+                  //Toast.makeText(getApplicationContext(), "Data written to socket!", Toast.LENGTH_SHORT).show();
+
+                  Log.d("WRITTEN TO SOCKET", "YEAH");
+              }
+              catch (IOException e) {
+                  e.printStackTrace();
+              }
+              try {
+                  //txt.setText(info4);
+                  outStream.close();
+                  btSocket.close();
+              } catch (IOException e) {
+                  e.printStackTrace();
+              }
+          }
+        }).start();
+    }
+
+    public void prepareBitmaps(String path){
+        String[] paths = {"/storage/emulated/0/bluetooth/DSC_0001.jpg",
+                "/storage/emulated/0/bluetooth/DSC_0002.jpg",
+                "/storage/emulated/0/bluetooth/DSC_0003.jpg"};
+        ArrayList<byte[]> tab = new ArrayList<byte[]>();
+        for(String e : paths){
+            Bitmap bmp = BitmapFactory.decodeFile(e);
+            ByteArrayOutputStream s = new ByteArrayOutputStream();
+            bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
+            byte[] bytes = s.toByteArray();
+            tab.add(bytes);
+        }
+        /*
+        Bitmap bmp = BitmapFactory.decodeFile(path);
+        ByteArrayOutputStream s = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
+        byte[] bytes = s.toByteArray();
+        startTransmission(bytes);*/
+        /*for(byte[] b : tab){
+          startTransmission(b);
+        }*/
+        startTransmission(tab);
+        /*
+        try {
+            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
+            ArrayList<Bitmap> bitmaps = new ArrayList<Bitmap>();
+            for(int i=0; i<pdfRend.getPageCount(); ++i){
+                Bitmap b = Bitmap.createBitmap(imgViewWidth, imgViewHeight, Bitmap.Config.ARGB_8888);
+                Matrix m = imgView.getImageMatrix();
+                Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
+                pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                bitmaps.add(b);
+            }
+           /* imgView.setImageMatrix(m);
+            imgView.setImageBitmap(b);
+            imgView.invalidate();*//*
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }*/
+    }
+
+    public void startTransmission(final ArrayList<byte[]> tab){
+        reset();
+        BluetoothDevice device = adapter.getRemoteDevice(address);
+        Log.d("MAC ADDRESS = ", device.getAddress());
+        try {
+            btSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -208,70 +327,53 @@ public class RemoteBluetooth extends AppCompatActivity {
 
                 //txt.setText(info3);
 
-              try {
-                  if(outStream == null){
-                      Log.d("OUTSTREAM ", "IS NULL!");
-                      return;
-                  }
-                  Log.d("STARTING ", "WRITING TO SOCKET");
-                  outStream.write("#F".getBytes());     // #F - new file incoming
-                  outStream.write(buf);
-                  //outStream.write("#".getBytes());
-                  outStream.flush();
-                 /* try{
-                      Thread.currentThread().sleep(100, 0);
-                  }
-                  catch (InterruptedException e)
-                  {
-                      e.printStackTrace();
-                  }
-                  outStream.write("#E".getBytes());
-                  outStream.flush();*/
-                  //Toast.makeText(getApplicationContext(), "Data written to socket!", Toast.LENGTH_SHORT).show();
+                try {
+                    if(outStream == null){
+                        Log.d("OUTSTREAM ", "IS NULL!");
+                        return;
+                    }
+                    Log.d("STARTING ", "WRITING TO SOCKET");
+                    InputStream in = btSocket.getInputStream();
 
-                  Log.d("WRITTEN TO SOCKET", "YEAH");
-              }
-              catch (IOException e) {
-                  e.printStackTrace();
-              }
-              try {
-                  //txt.setText(info4);
-                  btSocket.close();
-              } catch (IOException e) {
-                  e.printStackTrace();
-              }
-          }
+                    // first, send number of slides to be transmitted
+                    int slidesCount = tab.size();
+                    outStream.write("#I".getBytes());   // #I - start of msg
+                    outStream.write(Integer.toString(slidesCount).getBytes());
+                    outStream.flush();
+                    int responseCode = in.read();
+                    if(responseCode == 7){  // 7 is cool
+                        // now we can send slides one by one
+                        for(byte[] b : tab){
+                            outStream.write(b);
+                            outStream.write("#E".getBytes());   // #E - end of file
+                            outStream.flush();
+                            // now wait for response...
+
+                            int response = in.read();
+                            if(response == 6){
+                                Log.d("Got response", "Let's continue");
+                            }
+                            else{
+                                throw new IOException("Wrong response code from server!");
+                            }
+
+                        }
+                    }
+
+                    Log.d("WRITTEN TO SOCKET", "YEAH");
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    //txt.setText(info4);
+                    btSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
     }
-
-    public void prepareBitmaps(String path){
-        Bitmap bmp = BitmapFactory.decodeFile(path);
-        ByteArrayOutputStream s = new ByteArrayOutputStream();
-        bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
-        byte[] bytes = s.toByteArray();
-        startTransmission(bytes);
-
-        /*
-        try {
-            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
-            ArrayList<Bitmap> bitmaps = new ArrayList<Bitmap>();
-            for(int i=0; i<pdfRend.getPageCount(); ++i){
-                Bitmap b = Bitmap.createBitmap(imgViewWidth, imgViewHeight, Bitmap.Config.ARGB_8888);
-                Matrix m = imgView.getImageMatrix();
-                Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
-                pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                bitmaps.add(b);
-            }
-           /* imgView.setImageMatrix(m);
-            imgView.setImageBitmap(b);
-            imgView.invalidate();*//*
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }*/
-    }
-
-
     public void doTransmit(){
         BluetoothDevice device = adapter.getRemoteDevice(address);
 
@@ -333,4 +435,22 @@ public class RemoteBluetooth extends AppCompatActivity {
         }
     }
 
+    public void reset(){
+        try {
+            if (outStream != null) {
+                outStream.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        outStream = null;
+        try {
+            if (btSocket != null) {
+                btSocket.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        btSocket = null;
+    }
 }
