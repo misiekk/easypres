@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 //import org.apache.poi.xslf.*;
 //import org.apache.poi.xslf.usermodel.XMLSlideShow;
@@ -23,8 +24,14 @@ public class MainActivity extends AppCompatActivity {
         Button butBt = (Button) findViewById(R.id.buttonBt);
         Button butWifi = (Button) findViewById(R.id.buttonWifi);
         Button butBrowse = (Button) findViewById(R.id.buttonBrowse);
-
+        TextView txt = (TextView) findViewById(R.id.textView);
         setSupportActionBar(toolbar);
+        toolbar.setVisibility(View.INVISIBLE);
+
+        txt.setTextSize(32);
+
+        getSupportActionBar().hide();
+
 
     }
 
@@ -62,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
     /* Obsluga przycisku Wifi */
     public void butWifiHandle(View v)
     {
-        Intent i = new Intent(this, ShowSlideActivity.class);
-        startActivity(i);
+        /*Intent i = new Intent(this, ShowSlideActivity.class);
+        startActivity(i);*/
     }
     /* Obsluga przycisku Browse */
     public void butBrowseHandle(View v)

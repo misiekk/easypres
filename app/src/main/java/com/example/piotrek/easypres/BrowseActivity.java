@@ -32,6 +32,9 @@ public class BrowseActivity extends AppCompatActivity {
         setContentView(R.layout.activity_browse);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        getSupportActionBar().setTitle("Choose file...");
+        //getSupportActionBar().hide();
         lv = (ListView) findViewById(R.id.listView);
 
         String rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();

@@ -68,7 +68,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_remote_bluetooth);
-
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         bitmaps = new ArrayList<Bitmap>();
         prevSlide = (Button) findViewById(R.id.buttonPrev);
         nextSlide = (Button) findViewById(R.id.buttonNext);
@@ -93,6 +94,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         imgVPrev = (ImageView) findViewById(R.id.imageViewPrev);
         imgVNext = (ImageView) findViewById(R.id.imageViewNext);
         changeButtonState(false);
+        getSupportActionBar().setTitle("Loading slides...");
+
     }
 
     public void startBTAdapter(){
@@ -503,5 +506,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         else{
             imgVNext.setImageBitmap(null);
         }
+
+        // update title
+        getSupportActionBar().setTitle("Slide " + Integer.toString(actualSlide+1) +"/" + Integer.toString(slidesCount));
     }
 }
