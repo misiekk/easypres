@@ -45,7 +45,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     public static final int READ_NUMBER_RESPONSE = 7;
     public static final int READ_COMMAND_NOT_OK_RESPONSE = 8;
     public static final String PREFIX_SLIDE = "#S";
-
+    public static final String PREFIX_COUNT_OF_SLIDES = "#I";
+    public static final String PREFIX_EOF = "#E";
     private static final int REQUEST_BT_ENABLE = 1;
 
     private static final int FILES_TRANSMITTED = 12;
@@ -61,6 +62,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     private ArrayList<Bitmap> bitmaps = null;
     private int actualSlide = 0;
     private int slidesCount = 0;
+    private boolean isBtTransmission = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +74,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         nextSlide = (Button) findViewById(R.id.buttonNext);
         Bundle bun = getIntent().getExtras();
         pathToFile = bun.getString("pathToPdf");
-
+        isBtTransmission = bun.getBoolean("bt");
         prevSlide.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -106,11 +108,9 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         if (!adapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_BT_ENABLE);
-
         }
         else{
-            showAlertBox();
-            //doTransmit();
+            prepareBitmapsAndSendSlides(pathToFile);
         }
 
     }
@@ -118,12 +118,17 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     @Override
     protected void onStart() {
         super.onStart();
-        startBTAdapter();
-        if(adapter == null){
-            Log.d("ADAPTER IS NULL!", "ERROR NULL!");
-            finish();
+        if(isBtTransmission){
+            startBTAdapter();
+            if(adapter == null){
+                Log.d("ADAPTER IS NULL!", "ERROR NULL!");
+                finish();
+            }
+            enableBTDialog();
         }
-        enableBTDialog();
+        else{
+            prepareBitmaps(pathToFile);
+        }
 
     }
     @Override
@@ -141,8 +146,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_BT_ENABLE) {
             if (resultCode == RESULT_OK) {
-                showAlertBox();
-                //doTransmit();
+                prepareBitmapsAndSendSlides(pathToFile);
             }
             else{
                 finish();
@@ -242,6 +246,20 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         String[] paths = {"/storage/emulated/0/bluetooth/DSC_0001.jpg",
                 "/storage/emulated/0/bluetooth/DSC_0002.jpg",
                 "/storage/emulated/0/bluetooth/DSC_0003.jpg"};
+        for(String e : paths){
+            Bitmap bmp = BitmapFactory.decodeFile(e);
+            bitmaps.add(bmp);
+        }
+        slidesCount = bitmaps.size();
+        changeButtonState(true);
+        // show first slide
+        showSlides(0);
+    }
+
+    public void prepareBitmapsAndSendSlides(String path){
+        String[] paths = {"/storage/emulated/0/bluetooth/DSC_0001.jpg",
+                "/storage/emulated/0/bluetooth/DSC_0002.jpg",
+                "/storage/emulated/0/bluetooth/DSC_0003.jpg"};
         ArrayList<byte[]> tab = new ArrayList<byte[]>();
         for(String e : paths){
             Bitmap bmp = BitmapFactory.decodeFile(e);
@@ -252,15 +270,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
             tab.add(bytes);
         }
         slidesCount = bitmaps.size();
-        /*
-        Bitmap bmp = BitmapFactory.decodeFile(path);
-        ByteArrayOutputStream s = new ByteArrayOutputStream();
-        bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
-        byte[] bytes = s.toByteArray();
-        startTransmission(bytes);*/
-        /*for(byte[] b : tab){
-          startTransmission(b);
-        }*/
+
         startTransmission(tab);
         //tab.clear();
         /*
@@ -292,9 +302,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         adapter.cancelDiscovery();
-
 
         class TransmitFiles extends Observable implements Runnable{
             TransmitFiles(Observer o){
@@ -340,7 +348,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
 
                     // first, send number of slides to be transmitted
                     int slidesCount = tab.size();
-                    outStream.write("#I".getBytes());   // #I - start of msg
+                    outStream.write(PREFIX_COUNT_OF_SLIDES.getBytes());   // #I - start of msg
                     outStream.write(Integer.toString(slidesCount).getBytes());
                     outStream.flush();
                     int responseCode = in.read();
@@ -348,7 +356,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                         // now we can send slides one by one
                         for(byte[] b : tab){
                             outStream.write(b);
-                            outStream.write("#E".getBytes());   // #E - end of file
+                            outStream.write(PREFIX_EOF.getBytes());   // #E - end of file
                             outStream.flush();
 
                             // now wait for response...
@@ -368,155 +376,56 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                 this.setChanged();
                 this.notifyObservers(FILES_TRANSMITTED);
             }
-
         }
 
         Thread t = new Thread(new TransmitFiles(this));
         t.start();
-/*
-        new Thread(new Runnable(){
-            public void run(){
-                try {
-                    btSocket.connect();
-                } catch (IOException e) {
-                    try {
-                        btSocket.close();
-                    } catch (IOException e2) {
-                        e2.printStackTrace();
-                    }
-                }
 
-                try {
-                    if(!btSocket.isConnected()){
-                        btSocket.connect();
-                    }
-                    outStream = btSocket.getOutputStream();
-                    Log.d("BTSOCKET ", Boolean.toString(btSocket.isConnected()));
-                    String info = "";
-                    if (outStream != null) {
-                        info = "EXISTS";
-                    } else {
-                        info = "NOT EXISTS";
-                    }
-                    Log.d("OUTSTREAM ", info);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    if(outStream == null){
-                        Log.d("OUTSTREAM ", "IS NULL!");
-                        return;
-                    }
-                    Log.d("STARTING ", "WRITING TO SOCKET");
-                    InputStream in = btSocket.getInputStream();
-
-                    // first, send number of slides to be transmitted
-                    int slidesCount = tab.size();
-                    outStream.write("#I".getBytes());   // #I - start of msg
-                    outStream.write(Integer.toString(slidesCount).getBytes());
-                    outStream.flush();
-                    int responseCode = in.read();
-                    if(responseCode == READ_NUMBER_RESPONSE){
-                        // now we can send slides one by one
-                        for(byte[] b : tab){
-                            outStream.write(b);
-                            outStream.write("#E".getBytes());   // #E - end of file
-                            outStream.flush();
-
-                            // now wait for response...
-                            int response = in.read();
-                            if(response == READ_FILE_RESPONSE){
-                                Log.d("Got response", "Let's continue");
-                            }
-                            else{
-                                throw new IOException("Wrong response code from server!");
-                            }
-                        }
-                    }
-                    Log.d("WRITTEN TO SOCKET", "YEAH");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                /*try {
-                    btSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }*/
-            /*}
-        }).start();
-*/
-    }
-    public void doTransmit(){
-        BluetoothDevice device = adapter.getRemoteDevice(address);
-
-        try {
-            btSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        adapter.cancelDiscovery();
-        try {
-            btSocket.connect();
-        } catch (IOException e) {
-            try {
-                btSocket.close();
-            } catch (IOException e2) {
-                e2.printStackTrace();
-            }
-        }
-
-        try {
-            outStream = btSocket.getOutputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void sendSlide(final int param){
         // update imageView and send request
         calculateActualSlide(param);
-        try{
-            InputStream in = btSocket.getInputStream();
-            if(!btSocket.isConnected()){
-                btSocket.connect();
-            }
-            int bCount = PREFIX_SLIDE.getBytes().length;
-            switch (param) {
-                case PREV_SLIDE:
-                    int psCount = Integer.toString(PREV_SLIDE).getBytes().length;
-                    byte[] temp_ps = new byte[bCount+psCount];
-                    System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ps, 0, bCount);
-                    System.arraycopy(Integer.toString(PREV_SLIDE).getBytes(), 0, temp_ps, bCount, psCount);
-                    outStream.write(temp_ps);
-                    break;
-                case NEXT_SLIDE:
-                    int nsCount = Integer.toString(NEXT_SLIDE).getBytes().length;
-                    byte[] temp_ns = new byte[bCount+nsCount];
-                    System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ns, 0, bCount);
-                    System.arraycopy(Integer.toString(NEXT_SLIDE).getBytes(), 0, temp_ns, bCount, nsCount);
-                    outStream.write(temp_ns);
-                    break;
-                default:
-                    break;
-            }
-            outStream.flush();
-            int commandOk = in.read();
-            if(commandOk == READ_COMMAND_OK_RESPONSE){
-                Log.d("COMMAND", "OK");
-            }
 
-            else if(commandOk == READ_COMMAND_NOT_OK_RESPONSE){
-                sendSlide(param);       // takie sobie
-            }
+        if(isBtTransmission) {
+            try {
+                InputStream in = btSocket.getInputStream();
+                if (!btSocket.isConnected()) {
+                    btSocket.connect();
+                }
+                int bCount = PREFIX_SLIDE.getBytes().length;
+                switch (param) {
+                    case PREV_SLIDE:
+                        int psCount = Integer.toString(PREV_SLIDE).getBytes().length;
+                        byte[] temp_ps = new byte[bCount + psCount];
+                        System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ps, 0, bCount);
+                        System.arraycopy(Integer.toString(PREV_SLIDE).getBytes(), 0, temp_ps, bCount, psCount);
+                        outStream.write(temp_ps);
+                        break;
+                    case NEXT_SLIDE:
+                        int nsCount = Integer.toString(NEXT_SLIDE).getBytes().length;
+                        byte[] temp_ns = new byte[bCount + nsCount];
+                        System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ns, 0, bCount);
+                        System.arraycopy(Integer.toString(NEXT_SLIDE).getBytes(), 0, temp_ns, bCount, nsCount);
+                        outStream.write(temp_ns);
+                        break;
+                    default:
+                        break;
+                }
+                outStream.flush();
+                int commandOk = in.read();
+                if (commandOk == READ_COMMAND_OK_RESPONSE) {
+                    Log.d("COMMAND", "OK");
+                } else if (commandOk == READ_COMMAND_NOT_OK_RESPONSE) {
+                    sendSlide(param);
+                }
 
-        } catch (Exception e){
-            e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-        //endTransmission();
     }
+
     public void calculateActualSlide(int param){
         switch (param){
             case PREV_SLIDE:
@@ -536,13 +445,6 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         showSlides(actualSlide);
 
 
-    }
-    public void endTransmission(){
-        try {
-            btSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void reset(){
@@ -581,25 +483,6 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                 }
             });
         }
-    }
-
-    public void showAlertBox(){
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Choose wisely");
-        builder.setMessage("Show slides or start Bluetooth Transmission?");
-        builder.setPositiveButton("Show slides", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Toast.makeText(getApplicationContext(), "To be implemented ;)", Toast.LENGTH_SHORT).show();
-            }
-        });
-        builder.setNegativeButton("Start transmission", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                prepareBitmaps(pathToFile);
-            }
-        });
-        builder.show();
     }
 
     public void showSlides(int param){
