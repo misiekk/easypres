@@ -8,39 +8,58 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@color/colorBackground"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.example.piotrek.easypres.RemoteBluetooth"
     tools:showIn="@layout/activity_remote_bluetooth">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:id="@+id/txtView"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="160dp" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Prev Slide"
         android:id="@+id/buttonPrev"
-        android:layout_below="@+id/txtView"
-        android:layout_toLeftOf="@+id/txtView"
-        android:layout_toStartOf="@+id/txtView"
-        android:layout_marginRight="30dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginTop="32dp" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="29dp"
+        android:layout_marginStart="29dp"
+        android:layout_marginBottom="70dp" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Next Slide"
         android:id="@+id/buttonNext"
-        android:layout_alignBottom="@+id/buttonPrev"
-        android:layout_toRightOf="@+id/txtView"
-        android:layout_toEndOf="@+id/txtView"
-        android:layout_marginLeft="26dp"
-        android:layout_marginStart="26dp" />
+        android:layout_alignTop="@+id/buttonPrev"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginRight="39dp"
+        android:layout_marginEnd="39dp" />
+
+    <ImageView
+        android:layout_width="200dp"
+        android:layout_height="160dp"
+        android:id="@+id/imageViewActual"
+        android:layout_above="@+id/buttonPrev"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="109dp"
+        android:background="@drawable/frames" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:id="@+id/imageViewPrev"
+        android:layout_above="@+id/imageViewActual"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:background="@drawable/frames" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:id="@+id/imageViewNext"
+        android:layout_alignTop="@+id/imageViewPrev"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:background="@drawable/frames" />
 </RelativeLayout>

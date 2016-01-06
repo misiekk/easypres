@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
@@ -20,6 +21,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,11 +30,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
-public class RemoteBluetooth extends AppCompatActivity {
+public class RemoteBluetooth extends AppCompatActivity implements Observer{
+    public static final int EXIT = 0;
     public static final int NEXT_SLIDE = 3;
     public static final int PREV_SLIDE = 4;
     public static final int READ_COMMAND_OK_RESPONSE = 5;
@@ -40,23 +45,29 @@ public class RemoteBluetooth extends AppCompatActivity {
     public static final int READ_NUMBER_RESPONSE = 7;
     public static final int READ_COMMAND_NOT_OK_RESPONSE = 8;
     public static final String PREFIX_SLIDE = "#S";
+
+    private static final int REQUEST_BT_ENABLE = 1;
+
+    private static final int FILES_TRANSMITTED = 12;
     private BluetoothAdapter adapter = null;
     private BluetoothSocket btSocket = null;
     private OutputStream outStream = null;
     private static final UUID MY_UUID =
             UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-    private static final int REQUEST_BT_ENABLE = 1;
-    TextView txt;
-    private Button prevSlide, nextSlide;
+    private Button prevSlide = null, nextSlide = null;
+    private ImageView imgVActual = null, imgVPrev = null, imgVNext = null;
     private static String address = "44:6D:57:EE:67:C2";
     private String pathToFile = "";
-
+    private ArrayList<Bitmap> bitmaps = null;
+    private int actualSlide = 0;
+    private int slidesCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_remote_bluetooth);
-        txt = (TextView) findViewById(R.id.txtView);
+
+        bitmaps = new ArrayList<Bitmap>();
         prevSlide = (Button) findViewById(R.id.buttonPrev);
         nextSlide = (Button) findViewById(R.id.buttonNext);
         Bundle bun = getIntent().getExtras();
@@ -76,13 +87,13 @@ public class RemoteBluetooth extends AppCompatActivity {
             }
         });
 
+        imgVActual = (ImageView) findViewById(R.id.imageViewActual);
+        imgVPrev = (ImageView) findViewById(R.id.imageViewPrev);
+        imgVNext = (ImageView) findViewById(R.id.imageViewNext);
         changeButtonState(false);
     }
 
-    public void startBTAdapter()
-    {
-        //String info = "Starting Bluetooth Adapter...";
-        //txt.setText(info);
+    public void startBTAdapter(){
         adapter = BluetoothAdapter.getDefaultAdapter();
         //Log.d("ADAPTER!", "STARTING!");
         if(adapter == null) {
@@ -95,27 +106,10 @@ public class RemoteBluetooth extends AppCompatActivity {
         if (!adapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_BT_ENABLE);
-            /*
-            final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Bluetooth not enabled!");
-            builder.setMessage("Press OK to enable Bluetooth");
-            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    adapter.enable();
-                }
-            });
-            builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Toast.makeText(getApplicationContext(), "Disabling Bluetooth...", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            });
-            builder.show();*/
+
         }
         else{
-            prepareBitmaps(pathToFile);
+            showAlertBox();
             //doTransmit();
         }
 
@@ -130,6 +124,7 @@ public class RemoteBluetooth extends AppCompatActivity {
             finish();
         }
         enableBTDialog();
+
     }
     @Override
     public void onDestroy(){
@@ -146,7 +141,7 @@ public class RemoteBluetooth extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_BT_ENABLE) {
             if (resultCode == RESULT_OK) {
-                prepareBitmaps(pathToFile);
+                showAlertBox();
                 //doTransmit();
             }
             else{
@@ -170,7 +165,6 @@ public class RemoteBluetooth extends AppCompatActivity {
 
         try {
             btSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
-            txt.setText(info1);
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -182,7 +176,6 @@ public class RemoteBluetooth extends AppCompatActivity {
                 //OutputStream out = null;
                 try {
                     btSocket.connect();
-                    //txt.setText(info2);
                 } catch (IOException e) {
                     try {
                         btSocket.close();
@@ -209,9 +202,6 @@ public class RemoteBluetooth extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
-                //txt.setText(info3);
-
               try {
                   if(outStream == null){
                       Log.d("OUTSTREAM ", "IS NULL!");
@@ -239,7 +229,6 @@ public class RemoteBluetooth extends AppCompatActivity {
                   e.printStackTrace();
               }
               try {
-                  //txt.setText(info4);
                   outStream.close();
                   btSocket.close();
               } catch (IOException e) {
@@ -256,11 +245,13 @@ public class RemoteBluetooth extends AppCompatActivity {
         ArrayList<byte[]> tab = new ArrayList<byte[]>();
         for(String e : paths){
             Bitmap bmp = BitmapFactory.decodeFile(e);
+            bitmaps.add(bmp);
             ByteArrayOutputStream s = new ByteArrayOutputStream();
             bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
             byte[] bytes = s.toByteArray();
             tab.add(bytes);
         }
+        slidesCount = bitmaps.size();
         /*
         Bitmap bmp = BitmapFactory.decodeFile(path);
         ByteArrayOutputStream s = new ByteArrayOutputStream();
@@ -271,6 +262,7 @@ public class RemoteBluetooth extends AppCompatActivity {
           startTransmission(b);
         }*/
         startTransmission(tab);
+        //tab.clear();
         /*
         try {
             PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
@@ -302,6 +294,86 @@ public class RemoteBluetooth extends AppCompatActivity {
         }
 
         adapter.cancelDiscovery();
+
+
+        class TransmitFiles extends Observable implements Runnable{
+            TransmitFiles(Observer o){
+                this.addObserver(o);
+            }
+
+            @Override
+            public void run() {
+                try {
+                    btSocket.connect();
+                } catch (IOException e) {
+                    try {
+                        btSocket.close();
+                    } catch (IOException e2) {
+                        e2.printStackTrace();
+                    }
+                }
+
+                try {
+                    if(!btSocket.isConnected()){
+                        btSocket.connect();
+                    }
+                    outStream = btSocket.getOutputStream();
+                    Log.d("BTSOCKET ", Boolean.toString(btSocket.isConnected()));
+                    String info = "";
+                    if (outStream != null) {
+                        info = "EXISTS";
+                    } else {
+                        info = "NOT EXISTS";
+                    }
+                    Log.d("OUTSTREAM ", info);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    if(outStream == null){
+                        Log.d("OUTSTREAM ", "IS NULL!");
+                        return;
+                    }
+                    Log.d("STARTING ", "WRITING TO SOCKET");
+                    InputStream in = btSocket.getInputStream();
+
+                    // first, send number of slides to be transmitted
+                    int slidesCount = tab.size();
+                    outStream.write("#I".getBytes());   // #I - start of msg
+                    outStream.write(Integer.toString(slidesCount).getBytes());
+                    outStream.flush();
+                    int responseCode = in.read();
+                    if(responseCode == READ_NUMBER_RESPONSE){
+                        // now we can send slides one by one
+                        for(byte[] b : tab){
+                            outStream.write(b);
+                            outStream.write("#E".getBytes());   // #E - end of file
+                            outStream.flush();
+
+                            // now wait for response...
+                            int response = in.read();
+                            if(response == READ_FILE_RESPONSE){
+                                Log.d("Got response", "Let's continue");
+                            }
+                            else{
+                                throw new IOException("Wrong response code from server!");
+                            }
+                        }
+                    }
+                    Log.d("WRITTEN TO SOCKET", "YEAH");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                this.setChanged();
+                this.notifyObservers(FILES_TRANSMITTED);
+            }
+
+        }
+
+        Thread t = new Thread(new TransmitFiles(this));
+        t.start();
+/*
         new Thread(new Runnable(){
             public void run(){
                 try {
@@ -366,16 +438,15 @@ public class RemoteBluetooth extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
                 /*try {
-                    //txt.setText(info4);
                     btSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }*/
-            }
+            /*}
         }).start();
-
-
+*/
     }
     public void doTransmit(){
         BluetoothDevice device = adapter.getRemoteDevice(address);
@@ -405,21 +476,28 @@ public class RemoteBluetooth extends AppCompatActivity {
     }
 
     public void sendSlide(final int param){
-        //doTransmit();
+        // update imageView and send request
+        calculateActualSlide(param);
         try{
             InputStream in = btSocket.getInputStream();
             if(!btSocket.isConnected()){
                 btSocket.connect();
             }
-
+            int bCount = PREFIX_SLIDE.getBytes().length;
             switch (param) {
                 case PREV_SLIDE:
-                    outStream.write(PREFIX_SLIDE.getBytes());
-                    outStream.write(Integer.toString(PREV_SLIDE).getBytes());
+                    int psCount = Integer.toString(PREV_SLIDE).getBytes().length;
+                    byte[] temp_ps = new byte[bCount+psCount];
+                    System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ps, 0, bCount);
+                    System.arraycopy(Integer.toString(PREV_SLIDE).getBytes(), 0, temp_ps, bCount, psCount);
+                    outStream.write(temp_ps);
                     break;
                 case NEXT_SLIDE:
-                    outStream.write(PREFIX_SLIDE.getBytes());
-                    outStream.write(Integer.toString(NEXT_SLIDE).getBytes());
+                    int nsCount = Integer.toString(NEXT_SLIDE).getBytes().length;
+                    byte[] temp_ns = new byte[bCount+nsCount];
+                    System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ns, 0, bCount);
+                    System.arraycopy(Integer.toString(NEXT_SLIDE).getBytes(), 0, temp_ns, bCount, nsCount);
+                    outStream.write(temp_ns);
                     break;
                 default:
                     break;
@@ -439,7 +517,26 @@ public class RemoteBluetooth extends AppCompatActivity {
         }
         //endTransmission();
     }
+    public void calculateActualSlide(int param){
+        switch (param){
+            case PREV_SLIDE:
+                if(actualSlide > 0) {
+                    actualSlide--;
+                }
+                break;
+            case NEXT_SLIDE:
+                if(actualSlide < slidesCount-1){
+                    actualSlide++;
+                }
+                break;
 
+            default:
+                break;
+        }
+        showSlides(actualSlide);
+
+
+    }
     public void endTransmission(){
         try {
             btSocket.close();
@@ -468,7 +565,60 @@ public class RemoteBluetooth extends AppCompatActivity {
     }
 
     public void changeButtonState(boolean state){
-        prevSlide.setActivated(state);
-        nextSlide.setActivated(state);
+        prevSlide.setEnabled(state);
+        nextSlide.setEnabled(state);
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        if((Integer)data == FILES_TRANSMITTED){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    changeButtonState(true);
+                    // show first slide
+                    showSlides(0);
+                }
+            });
+        }
+    }
+
+    public void showAlertBox(){
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose wisely");
+        builder.setMessage("Show slides or start Bluetooth Transmission?");
+        builder.setPositiveButton("Show slides", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Toast.makeText(getApplicationContext(), "To be implemented ;)", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Start transmission", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                prepareBitmaps(pathToFile);
+            }
+        });
+        builder.show();
+    }
+
+    public void showSlides(int param){
+        Bitmap bmpAct = bitmaps.get(param);
+        imgVActual.setImageBitmap(bmpAct);
+
+        if(param > 0){
+            Bitmap bmpPrev = bitmaps.get(param-1);
+            imgVPrev.setImageBitmap(bmpPrev);
+        }
+        else{
+            imgVPrev.setImageBitmap(null);
+        }
+        if(param < slidesCount-1){
+            Bitmap bmpNext = bitmaps.get(param+1);
+            imgVNext.setImageBitmap(bmpNext);
+        }
+        else{
+            imgVNext.setImageBitmap(null);
+        }
     }
 }
