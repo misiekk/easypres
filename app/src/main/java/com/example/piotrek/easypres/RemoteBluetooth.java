@@ -33,6 +33,13 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
 public class RemoteBluetooth extends AppCompatActivity {
+    public static final int NEXT_SLIDE = 3;
+    public static final int PREV_SLIDE = 4;
+    public static final int READ_COMMAND_OK_RESPONSE = 5;
+    public static final int READ_FILE_RESPONSE = 6;
+    public static final int READ_NUMBER_RESPONSE = 7;
+    public static final int READ_COMMAND_NOT_OK_RESPONSE = 8;
+    public static final String PREFIX_SLIDE = "#S";
     private BluetoothAdapter adapter = null;
     private BluetoothSocket btSocket = null;
     private OutputStream outStream = null;
@@ -58,16 +65,18 @@ public class RemoteBluetooth extends AppCompatActivity {
         prevSlide.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendSlide(0);
+                sendSlide(PREV_SLIDE);
             }
         });
 
         nextSlide.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendSlide(1);
+                sendSlide(NEXT_SLIDE);
             }
         });
+
+        changeButtonState(false);
     }
 
     public void startBTAdapter()
@@ -297,11 +306,9 @@ public class RemoteBluetooth extends AppCompatActivity {
             public void run(){
                 try {
                     btSocket.connect();
-                    //txt.setText(info2);
                 } catch (IOException e) {
                     try {
                         btSocket.close();
-                        //Toast.makeText(getApplicationContext(), "Could not connect!", Toast.LENGTH_SHORT).show();
                     } catch (IOException e2) {
                         e2.printStackTrace();
                     }
@@ -311,7 +318,6 @@ public class RemoteBluetooth extends AppCompatActivity {
                     if(!btSocket.isConnected()){
                         btSocket.connect();
                     }
-                    //Toast.makeText(getApplicationContext(), "Connected!", Toast.LENGTH_SHORT).show();
                     outStream = btSocket.getOutputStream();
                     Log.d("BTSOCKET ", Boolean.toString(btSocket.isConnected()));
                     String info = "";
@@ -324,8 +330,6 @@ public class RemoteBluetooth extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
-                //txt.setText(info3);
 
                 try {
                     if(outStream == null){
@@ -341,38 +345,37 @@ public class RemoteBluetooth extends AppCompatActivity {
                     outStream.write(Integer.toString(slidesCount).getBytes());
                     outStream.flush();
                     int responseCode = in.read();
-                    if(responseCode == 7){  // 7 is cool
+                    if(responseCode == READ_NUMBER_RESPONSE){
                         // now we can send slides one by one
                         for(byte[] b : tab){
                             outStream.write(b);
                             outStream.write("#E".getBytes());   // #E - end of file
                             outStream.flush();
-                            // now wait for response...
 
+                            // now wait for response...
                             int response = in.read();
-                            if(response == 6){
+                            if(response == READ_FILE_RESPONSE){
                                 Log.d("Got response", "Let's continue");
                             }
                             else{
                                 throw new IOException("Wrong response code from server!");
                             }
-
                         }
                     }
-
                     Log.d("WRITTEN TO SOCKET", "YEAH");
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
-                try {
+                /*try {
                     //txt.setText(info4);
                     btSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                }
+                }*/
             }
         }).start();
+
+
     }
     public void doTransmit(){
         BluetoothDevice device = adapter.getRemoteDevice(address);
@@ -402,33 +405,43 @@ public class RemoteBluetooth extends AppCompatActivity {
     }
 
     public void sendSlide(final int param){
-        doTransmit();
+        //doTransmit();
         try{
+            InputStream in = btSocket.getInputStream();
             if(!btSocket.isConnected()){
                 btSocket.connect();
             }
-            //outStream.write("#C".getBytes());
+
             switch (param) {
-                case 0: // prev
-                    outStream.write(2);
+                case PREV_SLIDE:
+                    outStream.write(PREFIX_SLIDE.getBytes());
+                    outStream.write(Integer.toString(PREV_SLIDE).getBytes());
                     break;
-                case 1: // next
-                    outStream.write(3);
+                case NEXT_SLIDE:
+                    outStream.write(PREFIX_SLIDE.getBytes());
+                    outStream.write(Integer.toString(NEXT_SLIDE).getBytes());
                     break;
                 default:
                     break;
             }
-
             outStream.flush();
+            int commandOk = in.read();
+            if(commandOk == READ_COMMAND_OK_RESPONSE){
+                Log.d("COMMAND", "OK");
+            }
+
+            else if(commandOk == READ_COMMAND_NOT_OK_RESPONSE){
+                sendSlide(param);       // takie sobie
+            }
+
         } catch (Exception e){
             e.printStackTrace();
         }
-        endTransmission();
+        //endTransmission();
     }
 
     public void endTransmission(){
         try {
-            //txt.setText(info4);
             btSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -452,5 +465,10 @@ public class RemoteBluetooth extends AppCompatActivity {
             e.printStackTrace();
         }
         btSocket = null;
+    }
+
+    public void changeButtonState(boolean state){
+        prevSlide.setActivated(state);
+        nextSlide.setActivated(state);
     }
 }
