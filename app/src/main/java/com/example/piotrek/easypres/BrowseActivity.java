@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -37,7 +38,9 @@ public class BrowseActivity extends AppCompatActivity {
         //getSupportActionBar().hide();
         lv = (ListView) findViewById(R.id.listView);
 
+        Environment.getDataDirectory().getAbsolutePath();
         String rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        Log.d("External dir = ", rootPath);
         File root = new File(rootPath);
         pdfPaths = new ArrayList<String>();
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -73,7 +76,7 @@ public class BrowseActivity extends AppCompatActivity {
 
     public void processFile(File f, ArrayList<String> list)
     {
-        if(!f.getName().endsWith(".jpg"))
+        if(!f.getName().endsWith(".pdf"))
             return;
         list.add(f.getAbsolutePath());
     }

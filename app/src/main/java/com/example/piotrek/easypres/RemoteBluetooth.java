@@ -5,8 +5,13 @@ import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Rect;
+import android.graphics.pdf.PdfDocument;
+import android.graphics.pdf.PdfRenderer;
 import android.os.Bundle;
 import android.os.Message;
+import android.os.ParcelFileDescriptor;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -26,6 +31,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -95,7 +101,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         imgVNext = (ImageView) findViewById(R.id.imageViewNext);
         changeButtonState(false);
         getSupportActionBar().setTitle("Loading slides...");
-
+        Log.d("imgVActual: ", Integer.toString(imgVActual.getWidth()) + "x" + Integer.toString(imgVActual.getHeight()));
     }
 
     public void startBTAdapter(){
@@ -138,6 +144,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     public void onDestroy(){
         super.onDestroy();
         reset();
+        bitmaps.clear();
     }
 
     @Override
@@ -246,23 +253,93 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     }
 
     public void prepareBitmaps(String path){
-        String[] paths = {"/storage/emulated/0/bluetooth/DSC_0001.jpg",
-                "/storage/emulated/0/bluetooth/DSC_0002.jpg",
-                "/storage/emulated/0/bluetooth/DSC_0003.jpg"};
+        try {
+            Log.d("PATH = ", path);
+            File f = new File(path);
+            int imgViewWidth = imgVActual.getWidth(),
+                    imgViewHeight = imgVActual.getHeight();
+            /*int imgViewWidth = 200,
+                    imgViewHeight = 160;*/
+            Log.d("imgViewWidth = ", Integer.toString(imgViewWidth));
+            Log.d("imgViewHeight = ", Integer.toString(imgViewHeight));
+            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
+            Log.d("getPageCount = ", Integer.toString(pdfRend.getPageCount()));
+            //ArrayList<Bitmap> bitmaps = new ArrayList<Bitmap>();
+            for(int i=0; i<pdfRend.getPageCount(); ++i){
+                PdfRenderer.Page p = pdfRend.openPage(i);
+                Bitmap b = Bitmap.createBitmap(p.getWidth(), p.getHeight(), Bitmap.Config.ARGB_8888);
+                //Matrix m = imgVActual.getImageMatrix();
+                //Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
+                p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                //pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                bitmaps.add(b);
+                p.close();
+            }
+
+            pdfRend.close();
+            /*
+            imgView.setImageMatrix(m);
+            imgView.setImageBitmap(b);
+            imgView.invalidate();*/
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        /*
+        String[] paths = {"/storage/sdcard1/bluetooth/1prez.jpg",
+                "/storage/sdcard1/bluetooth/2prez.jpg",
+                "/storage/sdcard1/bluetooth/3prez.jpg"};
         for(String e : paths){
             Bitmap bmp = BitmapFactory.decodeFile(e);
             bitmaps.add(bmp);
         }
         slidesCount = bitmaps.size();
         changeButtonState(true);
-        // show first slide
+        // show first slide*/
+        slidesCount = bitmaps.size();
+        changeButtonState(true);
         showSlides(0);
     }
 
     public void prepareBitmapsAndSendSlides(String path){
-        String[] paths = {"/storage/emulated/0/bluetooth/DSC_0001.jpg",
-                "/storage/emulated/0/bluetooth/DSC_0002.jpg",
-                "/storage/emulated/0/bluetooth/DSC_0003.jpg"};
+        try {
+            ArrayList<byte[]> tab = new ArrayList<byte[]>();
+            Log.d("PATH = ", path);
+            File f = new File(path);
+            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
+            Log.d("getPageCount = ", Integer.toString(pdfRend.getPageCount()));
+            for(int i=0; i<pdfRend.getPageCount(); ++i){
+                PdfRenderer.Page p = pdfRend.openPage(i);
+                Bitmap b = Bitmap.createBitmap(p.getWidth(), p.getHeight(), Bitmap.Config.ARGB_8888);
+                //Matrix m = imgVActual.getImageMatrix();
+                //Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
+                p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                //pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                bitmaps.add(b);
+                p.close();
+                ByteArrayOutputStream s = new ByteArrayOutputStream();
+                b.compress(Bitmap.CompressFormat.JPEG, 50, s);
+                byte[] bytes = s.toByteArray();
+                tab.add(bytes);
+            }
+
+            pdfRend.close();
+            /*
+            imgView.setImageMatrix(m);
+            imgView.setImageBitmap(b);
+            imgView.invalidate();*/
+            slidesCount = bitmaps.size();
+
+            startTransmission(tab);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+/*
+        String[] paths = {"/storage/sdcard1/bluetooth/1prez.jpg",
+                "/storage/sdcard1/bluetooth/2prez.jpg",
+                "/storage/sdcard1/bluetooth/3prez.jpg"};
         ArrayList<byte[]> tab = new ArrayList<byte[]>();
         for(String e : paths){
             Bitmap bmp = BitmapFactory.decodeFile(e);
@@ -271,10 +348,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
             bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
             byte[] bytes = s.toByteArray();
             tab.add(bytes);
-        }
-        slidesCount = bitmaps.size();
+        }*/
 
-        startTransmission(tab);
         //tab.clear();
         /*
         try {
@@ -287,7 +362,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                 pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                 bitmaps.add(b);
             }
-           /* imgView.setImageMatrix(m);
+            imgView.setImageMatrix(m);
             imgView.setImageBitmap(b);
             imgView.invalidate();*//*
         }
@@ -467,6 +542,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
             e.printStackTrace();
         }
         btSocket = null;
+
     }
 
     public void changeButtonState(boolean state){
