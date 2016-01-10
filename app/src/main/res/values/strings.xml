@@ -9,4 +9,8 @@
     <string name="title_activity_remote_bluetooth">RemoteBluetooth</string>
     <string name="pathToPdf">pathToPdf</string>
     <string name="startBT">Starting Bluetooth Adapter...</string>
+    <string name="but_next">Next slide</string>
+    <string name="but_prev">Previous slide</string>
+    <string name="but_first">First slide</string>
+    <string name="but_last">Last slide</string>
 </resources>

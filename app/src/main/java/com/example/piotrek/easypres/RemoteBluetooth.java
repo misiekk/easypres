@@ -46,6 +46,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     public static final int EXIT = 0;
     public static final int NEXT_SLIDE = 3;
     public static final int PREV_SLIDE = 4;
+    public static final int FIRST_SLIDE = 5;
+    public static final int LAST_SLIDE = 6;
     public static final int READ_COMMAND_OK_RESPONSE = 5;
     public static final int READ_FILE_RESPONSE = 6;
     public static final int READ_NUMBER_RESPONSE = 7;
@@ -61,7 +63,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     private OutputStream outStream = null;
     private static final UUID MY_UUID =
             UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-    private Button prevSlide = null, nextSlide = null;
+    private Button prevSlide = null, nextSlide = null, firstSlide = null, lastSlide = null;
     private ImageView imgVActual = null, imgVPrev = null, imgVNext = null;
     private static String address = "44:6D:57:EE:67:C2";
     private String pathToFile = "";
@@ -79,6 +81,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         bitmaps = new ArrayList<Bitmap>();
         prevSlide = (Button) findViewById(R.id.buttonPrev);
         nextSlide = (Button) findViewById(R.id.buttonNext);
+        firstSlide = (Button) findViewById(R.id.buttonFirst);
+        lastSlide = (Button) findViewById(R.id.buttonLast);
         Bundle bun = getIntent().getExtras();
         pathToFile = bun.getString("pathToPdf");
         isBtTransmission = bun.getBoolean("bt");
@@ -89,10 +93,24 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
             }
         });
 
+        firstSlide.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendSlide(FIRST_SLIDE);
+            }
+        });
+
         nextSlide.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sendSlide(NEXT_SLIDE);
+            }
+        });
+
+        lastSlide.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendSlide(LAST_SLIDE);
             }
         });
 
@@ -389,8 +407,10 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
 
             @Override
             public void run() {
+                Log.d("RUNNING ", "BRUM BRUM");
                 try {
                     btSocket.connect();
+                    Log.d("BTSOCKET ", Boolean.toString(btSocket.isConnected()));
                 } catch (IOException e) {
                     try {
                         btSocket.close();
@@ -413,6 +433,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                     }
                     Log.d("OUTSTREAM ", info);
                 } catch (IOException e) {
+                    Log.d("EXCEPTION", " :(");
                     e.printStackTrace();
                 }
 
@@ -487,6 +508,20 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                         System.arraycopy(Integer.toString(NEXT_SLIDE).getBytes(), 0, temp_ns, bCount, nsCount);
                         outStream.write(temp_ns);
                         break;
+                    case FIRST_SLIDE:
+                        int fsCount = Integer.toString(FIRST_SLIDE).getBytes().length;
+                        byte[] temp_fs = new byte[bCount + fsCount];
+                        System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_fs, 0, bCount);
+                        System.arraycopy(Integer.toString(FIRST_SLIDE).getBytes(), 0, temp_fs, bCount, fsCount);
+                        outStream.write(temp_fs);
+                        break;
+                    case LAST_SLIDE:
+                        int lsCount = Integer.toString(LAST_SLIDE).getBytes().length;
+                        byte[] temp_ls = new byte[bCount + lsCount];
+                        System.arraycopy(PREFIX_SLIDE.getBytes(), 0, temp_ls, 0, bCount);
+                        System.arraycopy(Integer.toString(LAST_SLIDE).getBytes(), 0, temp_ls, bCount, lsCount);
+                        outStream.write(temp_ls);
+                        break;
                     default:
                         break;
                 }
@@ -515,6 +550,12 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                 if(actualSlide < slidesCount-1){
                     actualSlide++;
                 }
+                break;
+            case FIRST_SLIDE:
+                actualSlide = 0;
+                break;
+            case LAST_SLIDE:
+                actualSlide = slidesCount-1;
                 break;
 
             default:
@@ -548,6 +589,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
     public void changeButtonState(boolean state){
         prevSlide.setEnabled(state);
         nextSlide.setEnabled(state);
+        firstSlide.setEnabled(state);
+        lastSlide.setEnabled(state);
     }
 
     @Override
