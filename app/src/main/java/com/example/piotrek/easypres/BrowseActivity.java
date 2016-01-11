@@ -3,10 +3,8 @@ package com.example.piotrek.easypres;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.ParcelFileDescriptor;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -16,13 +14,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import java.io.File;
 import java.util.ArrayList;
-import android.graphics.pdf.PdfRenderer;
-import android.widget.Toast;
 
 
 public class BrowseActivity extends AppCompatActivity {
-    ArrayList<String> ptxPaths;
-    ArrayAdapter<String> ptxAdapter;
     ArrayList<String> pdfPaths;
     ArrayAdapter<String> pdfAdapter;
     ListView lv;
@@ -97,7 +91,6 @@ public class BrowseActivity extends AppCompatActivity {
         builder.setPositiveButton("Show slides", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                //Toast.makeText(getApplicationContext(), "To be implemented ;)", Toast.LENGTH_SHORT).show();
                 Intent i = new Intent(getApplicationContext(), RemoteBluetooth.class);
                 i.putExtra("pathToPdf", path);
                 i.putExtra("bt", false);

@@ -1,6 +1,7 @@
 package com.example.piotrek.easypres;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -27,6 +28,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -65,12 +67,14 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
             UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private Button prevSlide = null, nextSlide = null, firstSlide = null, lastSlide = null;
     private ImageView imgVActual = null, imgVPrev = null, imgVNext = null;
+   // private ProgressBar progressBar;
     private static String address = "44:6D:57:EE:67:C2";
     private String pathToFile = "";
     private ArrayList<Bitmap> bitmaps = null;
     private int actualSlide = 0;
     private int slidesCount = 0;
     private boolean isBtTransmission = false;
+    ProgressDialog dialog = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,7 +121,12 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         imgVActual = (ImageView) findViewById(R.id.imageViewActual);
         imgVPrev = (ImageView) findViewById(R.id.imageViewPrev);
         imgVNext = (ImageView) findViewById(R.id.imageViewNext);
+        //progressBar = (ProgressBar) findViewById(R.id.progressBar);
+
         changeButtonState(false);
+
+        dialog = new ProgressDialog(this);
+
         getSupportActionBar().setTitle("Loading slides...");
         Log.d("imgVActual: ", Integer.toString(imgVActual.getWidth()) + "x" + Integer.toString(imgVActual.getHeight()));
     }
@@ -270,127 +279,97 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
         }).start();
     }
 
-    public void prepareBitmaps(String path){
-        try {
-            Log.d("PATH = ", path);
-            File f = new File(path);
-            int imgViewWidth = imgVActual.getWidth(),
-                    imgViewHeight = imgVActual.getHeight();
-            /*int imgViewWidth = 200,
-                    imgViewHeight = 160;*/
-            Log.d("imgViewWidth = ", Integer.toString(imgViewWidth));
-            Log.d("imgViewHeight = ", Integer.toString(imgViewHeight));
-            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
-            Log.d("getPageCount = ", Integer.toString(pdfRend.getPageCount()));
-            //ArrayList<Bitmap> bitmaps = new ArrayList<Bitmap>();
-            for(int i=0; i<pdfRend.getPageCount(); ++i){
-                PdfRenderer.Page p = pdfRend.openPage(i);
-                Bitmap b = Bitmap.createBitmap(p.getWidth(), p.getHeight(), Bitmap.Config.ARGB_8888);
-                //Matrix m = imgVActual.getImageMatrix();
-                //Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
-                p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                //pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                bitmaps.add(b);
-                p.close();
+    public void prepareBitmaps(final String path){
+        Log.d("PATH = ", path);
+        //final ProgressDialog dialog = new ProgressDialog(this);
+        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        dialog.setMessage("Loading...");
+        dialog.show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                File f = new File(path);
+                PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
+                Log.d("getPageCount = ", Integer.toString(pdfRend.getPageCount()));
+                for(int i=0; i<pdfRend.getPageCount(); ++i){
+                    PdfRenderer.Page p = pdfRend.openPage(i);
+                    Bitmap b = Bitmap.createBitmap(p.getWidth(), p.getHeight(), Bitmap.Config.ARGB_8888);
+                    p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    bitmaps.add(b);
+                    p.close();
+                }
+
+                pdfRend.close();
+                    slidesCount = bitmaps.size();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            changeButtonState(true);
+                            showSlides(0);
+                            dialog.dismiss();
+                        }
+                    });
+
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
-            pdfRend.close();
-            /*
-            imgView.setImageMatrix(m);
-            imgView.setImageBitmap(b);
-            imgView.invalidate();*/
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        /*
-        String[] paths = {"/storage/sdcard1/bluetooth/1prez.jpg",
-                "/storage/sdcard1/bluetooth/2prez.jpg",
-                "/storage/sdcard1/bluetooth/3prez.jpg"};
-        for(String e : paths){
-            Bitmap bmp = BitmapFactory.decodeFile(e);
-            bitmaps.add(bmp);
-        }
-        slidesCount = bitmaps.size();
-        changeButtonState(true);
-        // show first slide*/
-        slidesCount = bitmaps.size();
-        changeButtonState(true);
-        showSlides(0);
+        }).start();
     }
 
-    public void prepareBitmapsAndSendSlides(String path){
-        try {
-            ArrayList<byte[]> tab = new ArrayList<byte[]>();
-            Log.d("PATH = ", path);
-            File f = new File(path);
-            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
-            Log.d("getPageCount = ", Integer.toString(pdfRend.getPageCount()));
-            for(int i=0; i<pdfRend.getPageCount(); ++i){
-                PdfRenderer.Page p = pdfRend.openPage(i);
-                Bitmap b = Bitmap.createBitmap(p.getWidth(), p.getHeight(), Bitmap.Config.ARGB_8888);
-                //Matrix m = imgVActual.getImageMatrix();
-                //Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
-                p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                //pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                bitmaps.add(b);
-                p.close();
-                ByteArrayOutputStream s = new ByteArrayOutputStream();
-                b.compress(Bitmap.CompressFormat.JPEG, 50, s);
-                byte[] bytes = s.toByteArray();
-                tab.add(bytes);
+    public void prepareBitmapsAndSendSlides(final String path){
+        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        dialog.setMessage("Loading...");
+        dialog.show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ArrayList<byte[]> tab = new ArrayList<byte[]>();
+                    Log.d("PATH = ", path);
+                    File f = new File(path);
+                    PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
+                    Log.d("getPageCount = ", Integer.toString(pdfRend.getPageCount()));
+                    for(int i=0; i<pdfRend.getPageCount(); ++i){
+                        PdfRenderer.Page p = pdfRend.openPage(i);
+                        Bitmap b = Bitmap.createBitmap(p.getWidth(), p.getHeight(), Bitmap.Config.ARGB_8888);
+                        //Matrix m = imgVActual.getImageMatrix();
+                        //Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
+                        p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        //pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        bitmaps.add(b);
+                        p.close();
+                        ByteArrayOutputStream s = new ByteArrayOutputStream();
+                        b.compress(Bitmap.CompressFormat.PNG, 100, s);
+                        byte[] bytes = s.toByteArray();
+                        tab.add(bytes);
+                    }
+
+                    pdfRend.close();
+                    slidesCount = bitmaps.size();
+
+                    startTransmission(tab);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+        }).start();
 
-            pdfRend.close();
-            /*
-            imgView.setImageMatrix(m);
-            imgView.setImageBitmap(b);
-            imgView.invalidate();*/
-            slidesCount = bitmaps.size();
-
-            startTransmission(tab);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-/*
-        String[] paths = {"/storage/sdcard1/bluetooth/1prez.jpg",
-                "/storage/sdcard1/bluetooth/2prez.jpg",
-                "/storage/sdcard1/bluetooth/3prez.jpg"};
-        ArrayList<byte[]> tab = new ArrayList<byte[]>();
-        for(String e : paths){
-            Bitmap bmp = BitmapFactory.decodeFile(e);
-            bitmaps.add(bmp);
-            ByteArrayOutputStream s = new ByteArrayOutputStream();
-            bmp.compress(Bitmap.CompressFormat.JPEG, 50, s);
-            byte[] bytes = s.toByteArray();
-            tab.add(bytes);
-        }*/
-
-        //tab.clear();
-        /*
-        try {
-            PdfRenderer pdfRend = new PdfRenderer(ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY));
-            ArrayList<Bitmap> bitmaps = new ArrayList<Bitmap>();
-            for(int i=0; i<pdfRend.getPageCount(); ++i){
-                Bitmap b = Bitmap.createBitmap(imgViewWidth, imgViewHeight, Bitmap.Config.ARGB_8888);
-                Matrix m = imgView.getImageMatrix();
-                Rect rect = new Rect(0, 0, imgViewWidth, imgViewHeight);
-                pdfRend.openPage(i).render(b, rect, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                bitmaps.add(b);
-            }
-            imgView.setImageMatrix(m);
-            imgView.setImageBitmap(b);
-            imgView.invalidate();*//*
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }*/
     }
 
     public void startTransmission(final ArrayList<byte[]> tab){
         reset();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialog.setMessage("Started transmittion...");
+            }
+        });
+
         BluetoothDevice device = adapter.getRemoteDevice(address);
         Log.d("MAC ADDRESS = ", device.getAddress());
         try {
@@ -479,6 +458,8 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
 
         Thread t = new Thread(new TransmitFiles(this));
         t.start();
+
+
 
     }
 
@@ -602,6 +583,7 @@ public class RemoteBluetooth extends AppCompatActivity implements Observer{
                     changeButtonState(true);
                     // show first slide
                     showSlides(0);
+                    dialog.dismiss();
                 }
             });
         }

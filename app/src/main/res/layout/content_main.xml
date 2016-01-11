@@ -22,39 +22,12 @@
         android:layout_centerHorizontal="true" />
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/but_bt"
-        android:id="@+id/buttonBt"
-        android:layout_below="@+id/textView"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginLeft="43dp"
-        android:layout_marginStart="43dp"
-        android:layout_marginTop="92dp"
-        android:onClick="butBtHandle" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/but_wifi"
-        android:id="@+id/buttonWifi"
-        android:layout_marginTop="25dp"
-        android:layout_below="@+id/buttonBt"
-        android:layout_alignLeft="@+id/buttonBt"
-        android:layout_alignStart="@+id/buttonBt"
-        android:onClick="butWifiHandle" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
         android:text="@string/but_browse"
         android:id="@+id/buttonBrowse"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@+id/buttonWifi"
-        android:layout_toEndOf="@+id/buttonWifi"
         android:layout_marginLeft="39dp"
-        android:layout_marginStart="39dp"
-        android:layout_marginBottom="129dp"
-        android:onClick="butBrowseHandle" />
+        android:onClick="butBrowseHandle"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
 </RelativeLayout>

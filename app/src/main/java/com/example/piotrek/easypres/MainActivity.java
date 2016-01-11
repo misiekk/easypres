@@ -1,6 +1,7 @@
 package com.example.piotrek.easypres;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -21,22 +22,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        Button butBt = (Button) findViewById(R.id.buttonBt);
-        Button butWifi = (Button) findViewById(R.id.buttonWifi);
         Button butBrowse = (Button) findViewById(R.id.buttonBrowse);
         TextView txt = (TextView) findViewById(R.id.textView);
         setSupportActionBar(toolbar);
         toolbar.setVisibility(View.INVISIBLE);
 
-        txt.setTextSize(32);
+        txt.setTextSize(36);
+        txt.setTextColor(Color.WHITE);
 
         getSupportActionBar().hide();
 
 
-    }
-
-    public enum SupportedPowerPointFiles{
-        PPTX
     }
 
     @Override
@@ -60,18 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-    /* Obsluga przycisku BT */
-    public void butBtHandle(View v)
-    {
-        Intent i = new Intent(this, RemoteBluetooth.class);
-        startActivity(i);
-    }
-    /* Obsluga przycisku Wifi */
-    public void butWifiHandle(View v)
-    {
-        /*Intent i = new Intent(this, ShowSlideActivity.class);
-        startActivity(i);*/
-    }
+
     /* Obsluga przycisku Browse */
     public void butBrowseHandle(View v)
     {

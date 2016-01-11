@@ -1,9 +1,7 @@
 <resources>
     <string name="app_name">EasyPres</string>
     <string name="action_settings">Settings</string>
-    <string name="but_bt">Bluetooth</string>
-    <string name="but_wifi">WiFi</string>
-    <string name="but_browse">Browse...</string>
+    <string name="but_browse">Find presentation</string>
     <string name="title_activity_browse">BrowseActivity</string>
     <string name="title_activity_show_slide">ShowSlideActivity</string>
     <string name="title_activity_remote_bluetooth">RemoteBluetooth</string>
